@@ -1,0 +1,15 @@
+---
+title: "p8105_hw6_bg2645"
+author: "Bing Bing Guo"
+date: "11/20/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest)
+library(tidyverse)
+library(purrr)
+library(broom)
+```
+
