@@ -13,11 +13,12 @@ library(purrr)
 library(broom)
 library(modelr)
 library(mgcv)
+library(patchwork)
 ```
 
 ## Question 1
 
-* Load and clean the data for regression analysis
+**Load and clean the data for regression analysis**
 
 ```{r} 
 birthweight_data = 
@@ -39,7 +40,7 @@ sum(!complete.cases(birthweight_data))
 * There are no missing values in the dataset 
 
 
-* Propose a regression model for birthweight and show a plot of model residuals against fitted values 
+**Propose a regression model for birthweight and show a plot of model residuals against fitted values**
 
 ```{r} 
 regmodel_1 = lm(bwt ~ fincome + gaweeks + delwt + bhead +blength + smoken, data = birthweight_data) 
@@ -62,23 +63,25 @@ ggplot(aes(x = pred, y = resid)) + geom_point(alpha = 0.5) +
     y = "Residuals"
    )
 ```
-* the majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus are outliers. 
+
+* The majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus are outliers. 
 
 
-* Compare your model against a model using length at birth and gestational age as predictors (main effects only)  
+**Compare your model against a model using length at birth and gestational age as predictors (main effects only)**
+
 ```{r} 
 regmodel_2 = lm(bwt ~ blength + gaweeks, data = birthweight_data)
 summary(regmodel_2)
 ```
 
-* Compare your model against a model using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+**Compare your model against a model using head circumference, length, sex, and all interactions (including the three-way interaction) between these**
 
 ```{r} 
 regmodel_3 = lm(bwt ~ bhead + babysex + blength + (bhead * babysex * blength), data = birthweight_data)
 summary(regmodel_3)
 ```
 
-Make this comparison in terms of the cross-validated prediction error; use `crossv_mc` and functions in `purrr` as appropriate.
+**Make this comparison in terms of the cross-validated prediction error; use `crossv_mc` and functions in `purrr` as appropriate.**
 
 ```{r} 
 cv_birthweight =
@@ -93,6 +96,7 @@ mutate( train = map(train, as_tibble),
   mutate(rmse_regmodel_1 = map2_dbl(regmodel_1, test, ~rmse(model = .x, data = .y)),
          rmse_regmodel_2   = map2_dbl(regmodel_2, test, ~rmse(model = .x, data = .y)),
          rmse_regmodel_3 = map2_dbl(regmodel_3, test, ~rmse(model = .x, data = .y)))
+
 cv_birthweight %>% 
   select(starts_with("rmse")) %>% 
 pivot_longer(
@@ -103,6 +107,7 @@ pivot_longer(
   mutate(model = fct_inorder(model)) %>% 
   ggplot(aes(x = model, y = rmse,  fill = model)) + geom_violin(alpha=0.5) 
 ```
+
 * Based on the three models above, you can see that regmodel_2 has the highest RMSE while regmodel_1 has the lowest RMSE, in which regmodel_3 has a slightly higher RMSE than regmodel_1. Thus, regmodel_1 seems to be the best model as it has the lowest RMSE and thus fits data better than the other two models.  
 
 
@@ -123,8 +128,60 @@ weather_df =
 weather_df
 ```
 
-* Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of rsquared and log(beta0*beta1). 
+<b>Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of rsquared and log(beta0*beta1).<b>
 
-* Plot the distribution of your estimates
+```{r}
+boot_straps = 
+  data_frame(
+    strap_number = 1:5000,
+    strap_sample = rerun(5000, sample_frac(weather_df, replace = TRUE))
+  )
+boot_straps
+```
 
-* Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for rsquared and log(beta0*beta1). 
+```{r}
+bootstrap_results = 
+  boot_straps %>% 
+  mutate(
+    models = map(strap_sample, ~lm(tmax ~ tmin, data = .x) ),
+    results_tidy = map(models, broom::tidy),
+    results_glance = map(models, broom::glance)) %>% 
+  select(-strap_sample, -models) %>% 
+  unnest() %>% 
+  select(strap_number, r.squared, term, estimate) %>%
+  pivot_wider(names_from = "term", values_from = "estimate") %>%
+  janitor::clean_names() %>%
+  mutate(log_betas = log(intercept * tmin))
+
+bootstrap_results %>% 
+  summarize("rsquared" = mean(r_squared), 
+            "log(beta0*beta1)"= mean(log_betas))%>%
+  knitr::kable(digits = 3)
+```
+
+**Plot the distribution of your estimates**
+
+```{r}
+plot1 = ggplot(data = bootstrap_results, aes(x = r_squared)) + 
+          geom_histogram() + labs(title = "R-squared Estimates")  
+
+plot2 = ggplot(data = bootstrap_results, aes(x = log_betas)) + 
+          geom_histogram() + labs(title = "Log of beta0*beta1 Estimates")
+
+plot1 + plot2
+      
+```
+
+<b>Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for rsquared and log(beta0*beta1). <b>
+
+```{r} 
+quantile(pull(bootstrap_results, r_squared), probs = c(0.025, 0.975)) 
+```
+
+* Thus, the 95% CI for rsquared is (0.894, 0.927). 
+
+```{r} 
+quantile(pull(bootstrap_results, log_betas), probs = c(0.025, 0.975)) 
+```
+
+* Thus, the 95% confidence interval for log(beta0*beta1) is (1.965, 2.058).
