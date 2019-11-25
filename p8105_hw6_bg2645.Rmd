@@ -48,7 +48,7 @@ regmodel_1 %>%
 summary()
 ```
 
-* I chose variables that are known predictors of infant birthweight. `fincome` is a known SES factor, while `gaweeks`, `delwt`, `bhead` and `blength` are biological factors, and `smoken` is a behavioral factor. Furthermore, after looking at the summary for the fitted model, all the variables chosen were highly significant. 
+* I fit a regression model for birthweight testing how different characterstics impact infant birthweight. When modeling, it is important to select clinically relevant and statistically significant variables for your linear regression model. Thus, I chose variables that are known predictors of infant birthweight. `fincome` is a known SES factor, while `gaweeks`, `delwt`, `bhead` and `blength` are biological factors, and `smoken` is a behavioral factor. Furthermore, after looking at the summary for the fitted model, all the variables chosen were highly significant (p-value <0.05). 
 
 
 ```{r} 
@@ -64,7 +64,7 @@ ggplot(aes(x = pred, y = resid)) + geom_point(alpha = 0.5) +
    )
 ```
 
-* The majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus are outliers. 
+* The majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus there are outliers. 
 
 
 **Compare your model against a model using length at birth and gestational age as predictors (main effects only)**
@@ -169,10 +169,11 @@ plot2 = ggplot(data = bootstrap_results, aes(x = log_betas)) +
           geom_histogram() + labs(title = "Log of beta0*beta1 Estimates")
 
 plot1 + plot2
-      
 ```
 
-<b>Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for rsquared and log(beta0*beta1). <b>
+* Based on the histograms, you can see that that distribution of the rsquared estimates and the log (beta0*beta1) estimates are fairly normally distributed. 
+
+<b>Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for rsquared and log(beta0*beta1). </b>
 
 ```{r} 
 quantile(pull(bootstrap_results, r_squared), probs = c(0.025, 0.975)) 
