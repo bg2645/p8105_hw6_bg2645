@@ -37,7 +37,7 @@ birthweight_data
 sum(!complete.cases(birthweight_data))
 ```
 
-* There are no missing values in the dataset 
+* There are no missing values in the dataset. 
 
 
 **Propose a regression model for birthweight and show a plot of model residuals against fitted values**
@@ -59,13 +59,12 @@ ggplot(aes(x = pred, y = resid)) + geom_point(alpha = 0.5) +
            geom_hline(yintercept = 0, color = "green") + 
   labs(
     title = "Plot of model residuals against fitted values",
-    x = "Predicted Birtweight (grams)",
+    x = "Predicted Birthweight (grams)",
     y = "Residuals"
    )
 ```
 
-* The majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus there are outliers. 
-
+* The majority of the residuals fall around 0, however there some values particularily on the left side of the graph, where the predicted birthweight is lower, that have very high residuals and thus there are outliers.
 
 **Compare your model against a model using length at birth and gestational age as predictors (main effects only)**
 
@@ -151,12 +150,10 @@ bootstrap_results =
   select(strap_number, r.squared, term, estimate) %>%
   pivot_wider(names_from = "term", values_from = "estimate") %>%
   janitor::clean_names() %>%
-  mutate(log_betas = log(intercept * tmin))
+  mutate(log_betas = log(intercept * tmin)) %>%
+  select(r_squared, log_betas)
 
-bootstrap_results %>% 
-  summarize("rsquared" = mean(r_squared), 
-            "log(beta0*beta1)"= mean(log_betas))%>%
-  knitr::kable(digits = 3)
+bootstrap_results 
 ```
 
 **Plot the distribution of your estimates**
@@ -176,13 +173,15 @@ plot1 + plot2
 <b>Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for rsquared and log(beta0*beta1). </b>
 
 ```{r} 
-quantile(pull(bootstrap_results, r_squared), probs = c(0.025, 0.975)) 
+quantile(pull(bootstrap_results, r_squared), probs = c(0.025, 0.975)) %>%
+knitr::kable(col.names = "Rsquared")
 ```
 
 * Thus, the 95% CI for rsquared is (0.894, 0.927). 
 
 ```{r} 
-quantile(pull(bootstrap_results, log_betas), probs = c(0.025, 0.975)) 
+quantile(pull(bootstrap_results, log_betas), probs = c(0.025, 0.975)) %>% 
+knitr::kable(col.names = "Log(B0*B1)")
 ```
 
-* Thus, the 95% confidence interval for log(beta0*beta1) is (1.965, 2.058).
+* Thus, the 95% confidence interval for log(beta0*beta1) is (1.965, 2.057).
